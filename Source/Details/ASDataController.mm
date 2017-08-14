@@ -73,7 +73,10 @@ typedef void (^ASDataControllerSynchronizationBlock)();
   std::atomic<int> _editingTransactionGroupCount;
   
   BOOL _initialReloadDataHasBeenCalled;
-
+  
+  NSMutableDictionary<NSIndexPath *, ASCollectionElement *> *_movingElements;
+  NSMutableArray<NSIndexPath *> *_movingDestinationIndexPaths;
+  
   BOOL _synchronized;
   NSMutableSet<ASDataControllerSynchronizationBlock> *_onDidFinishSynchronizingBlocks;
 
@@ -372,13 +375,18 @@ typedef void (^ASDataControllerSynchronizationBlock)();
       constrainedSize = [self constrainedSizeForNodeOfKind:kind atIndexPath:indexPath];
     }
     
-    ASCollectionElement *element = [[ASCollectionElement alloc] initWithNodeModel:nodeModel
-                                                                        nodeBlock:nodeBlock
-                                                         supplementaryElementKind:isRowKind ? nil : kind
-                                                                  constrainedSize:constrainedSize
-                                                                       owningNode:node
-                                                                  traitCollection:traitCollection];
-    [map insertElement:element atIndexPath:indexPath];
+    if ([_movingDestinationIndexPaths containsObject:indexPath]) {
+      ASCollectionElement *element = [_movingElements objectForKey:indexPath];
+      [map insertElement:element atIndexPath:indexPath];
+    } else {
+      ASCollectionElement *element = [[ASCollectionElement alloc] initWithNodeModel:nodeModel
+                                                                          nodeBlock:nodeBlock
+                                                           supplementaryElementKind:isRowKind ? nil : kind
+                                                                    constrainedSize:constrainedSize
+                                                                         owningNode:node
+                                                                    traitCollection:traitCollection];
+      [map insertElement:element atIndexPath:indexPath];
+    }
   }
 }
 
@@ -712,11 +720,38 @@ typedef void (^ASDataControllerSynchronizationBlock)();
   
   // Migrate old supplementary nodes to their new index paths.
   [map migrateSupplementaryElementsWithSectionMapping:changeSet.sectionMapping];
+  
+  
+  ASElementMap *iMap = [map copy];
+  
+  // We make this flat so we can order everything together descending
+  //
+  NSArray * items = [changeSet itemChangesOfType:_ASHierarchyChangeTypeMove];
+  NSMutableArray<NSIndexPath *> *removalChangeIndexPaths = [NSMutableArray arrayWithCapacity:items.count];
+  _movingElements = [NSMutableDictionary dictionaryWithCapacity:items.count];
+  _movingDestinationIndexPaths = [NSMutableArray arrayWithCapacity:items.count];
+  
+  for (_ASHierarchyItemMoveChange *change in items) {
+    // Keep a reference to the element so we can insert it into the map later
+    // Store destination paths in the same order
+    ASCollectionElement *movingElement = [iMap elementForItemAtIndexPath:change.sourceIndexPath];
+    [_movingElements setObject:movingElement forKey:change.destinationIndexPath];
+    // Remove the element from the map, to be added in `insert` phase
+    [_movingDestinationIndexPaths addObject:change.destinationIndexPath];
+    
+    // Add to removal stack so it can be removed from the map together with the deletes.
+    [removalChangeIndexPaths addObject:change.sourceIndexPath];
+  }
 
   for (_ASHierarchyItemChange *change in [changeSet itemChangesOfType:_ASHierarchyChangeTypeDelete]) {
-    [map removeItemsAtIndexPaths:change.indexPaths];
+    [removalChangeIndexPaths addObjectsFromArray:change.indexPaths];
+  }
+  
+  // This may be a bit rogue flattening delete operations, but think makes most sense.
+  if (removalChangeIndexPaths.count > 0) {
+    [map removeItemsAtIndexPaths:[removalChangeIndexPaths sortedArrayUsingSelector:@selector(asdk_inverseCompare:)]];
     // Aggressively repopulate supplementary nodes (#1773 & #1629)
-    [self _repopulateSupplementaryNodesIntoMap:map forSectionsContainingIndexPaths:change.indexPaths
+    [self _repopulateSupplementaryNodesIntoMap:map forSectionsContainingIndexPaths:removalChangeIndexPaths
                                      changeSet:changeSet
                                traitCollection:traitCollection
                               indexPathsAreNew:NO
@@ -733,10 +768,22 @@ typedef void (^ASDataControllerSynchronizationBlock)();
     [self _insertElementsIntoMap:map sections:change.indexSet traitCollection:traitCollection shouldFetchSizeRanges:shouldFetchSizeRanges changeSet:changeSet previousMap:previousMap];
   }
   
+  // Make this flat again so we can order everything together ascending
+  NSMutableArray<NSIndexPath *> *insertChangeIndexPaths = [NSMutableArray array];
+  [insertChangeIndexPaths addObjectsFromArray:_movingDestinationIndexPaths];
+  
   for (_ASHierarchyItemChange *change in [changeSet itemChangesOfType:_ASHierarchyChangeTypeInsert]) {
-    [self _insertElementsIntoMap:map kind:ASDataControllerRowNodeKind atIndexPaths:change.indexPaths traitCollection:traitCollection shouldFetchSizeRanges:shouldFetchSizeRanges changeSet:changeSet previousMap:previousMap];
+    [insertChangeIndexPaths addObjectsFromArray:change.indexPaths];
+  }
+  
+  if (insertChangeIndexPaths.count > 0) {
+    [self _insertElementsIntoMap:map kind:ASDataControllerRowNodeKind atIndexPaths:insertChangeIndexPaths
+                 traitCollection:traitCollection
+           shouldFetchSizeRanges:shouldFetchSizeRanges
+                       changeSet:changeSet previousMap:previousMap];
+    
     // Aggressively reload supplementary nodes (#1773 & #1629)
-    [self _repopulateSupplementaryNodesIntoMap:map forSectionsContainingIndexPaths:change.indexPaths
+    [self _repopulateSupplementaryNodesIntoMap:map forSectionsContainingIndexPaths:insertChangeIndexPaths
                                      changeSet:changeSet
                                traitCollection:traitCollection
                               indexPathsAreNew:YES
