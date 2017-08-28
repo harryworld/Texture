@@ -2030,6 +2030,11 @@ minimumLineSpacingForSectionAtIndex:(NSInteger)section
           [super insertItemsAtIndexPaths:change.indexPaths];
           numberOfUpdates++;
         }
+        
+        for (_ASHierarchyItemMoveChange *change in [changeSet itemChangesOfType:_ASHierarchyChangeTypeMove]) {
+          [super moveItemAtIndexPath:change.sourceIndexPath toIndexPath:change.destinationIndexPath];
+          numberOfUpdates++;
+        }
       } completion:^(BOOL finished){
         as_activity_scope(as_activity_create("Handle collection update completion", changeSet.rootActivity, OS_ACTIVITY_FLAG_DEFAULT));
         as_log_verbose(ASCollectionLog(), "Update animation finished %{public}@", self.collectionNode);
