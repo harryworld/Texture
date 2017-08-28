@@ -68,6 +68,9 @@ typedef dispatch_block_t ASDataControllerCompletionBlock;
   dispatch_group_t _editingTransactionGroup;     // Group of all edit transaction blocks. Useful for waiting.
   
   BOOL _initialReloadDataHasBeenCalled;
+  
+  NSMutableDictionary<NSIndexPath *, ASCollectionElement *> *_movingElements;
+  NSMutableArray<NSIndexPath *> *_movingDestinationIndexPaths;
 
   struct {
     unsigned int supplementaryNodeKindsInSections:1;
@@ -360,13 +363,18 @@ typedef dispatch_block_t ASDataControllerCompletionBlock;
       constrainedSize = [self constrainedSizeForNodeOfKind:kind atIndexPath:indexPath];
     }
     
-    ASCollectionElement *element = [[ASCollectionElement alloc] initWithNodeModel:nodeModel
-                                                                        nodeBlock:nodeBlock
-                                                         supplementaryElementKind:isRowKind ? nil : kind
-                                                                  constrainedSize:constrainedSize
-                                                                       owningNode:node
-                                                                  traitCollection:traitCollection];
-    [map insertElement:element atIndexPath:indexPath];
+    if ([_movingDestinationIndexPaths containsObject:indexPath]) {
+      ASCollectionElement *element = [_movingElements objectForKey:indexPath];
+      [map insertElement:element atIndexPath:indexPath];
+    } else {
+      ASCollectionElement *element = [[ASCollectionElement alloc] initWithNodeModel:nodeModel
+                                                                          nodeBlock:nodeBlock
+                                                           supplementaryElementKind:isRowKind ? nil : kind
+                                                                    constrainedSize:constrainedSize
+                                                                         owningNode:node
+                                                                    traitCollection:traitCollection];
+      [map insertElement:element atIndexPath:indexPath];
+    }
   }
 }
 
@@ -644,15 +652,18 @@ typedef dispatch_block_t ASDataControllerCompletionBlock;
   
   // We make this flat so we can order everything together descending
   //
-  NSMutableArray<NSIndexPath *> *removalChangeIndexPaths = [NSMutableArray array];
-  NSMutableArray<NSIndexPath *> *movingDestinationIndexPaths = [NSMutableArray array];
-  NSMutableArray<ASCollectionElement *> *movingElements = [NSMutableArray array];
+  NSArray * items = [changeSet itemChangesOfType:_ASHierarchyChangeTypeMove];
+  NSMutableArray<NSIndexPath *> *removalChangeIndexPaths = [NSMutableArray arrayWithCapacity:items.count];
+  _movingElements = [NSMutableDictionary dictionaryWithCapacity:items.count];
+  _movingDestinationIndexPaths = [NSMutableArray arrayWithCapacity:items.count];
   
-  for (_ASHierarchyItemMoveChange *change in [changeSet itemChangesOfType:_ASHierarchyChangeTypeMove]) {
+  for (_ASHierarchyItemMoveChange *change in items) {
     // Keep a reference to the element so we can insert it into the map later
     // Store destination paths in the same order
-    [movingElements addObject:[iMap elementForItemAtIndexPath:change.sourceIndexPath]];
-    [movingDestinationIndexPaths addObject:change.destinationIndexPath];
+    ASCollectionElement *movingElement = [iMap elementForItemAtIndexPath:change.sourceIndexPath];
+    [_movingElements setObject:movingElement forKey:change.destinationIndexPath];
+    // Remove the element from the map, to be added in `insert` phase
+    [_movingDestinationIndexPaths addObject:change.destinationIndexPath];
     
     // Add to removal stack so it can be removed from the map together with the deletes.
     [removalChangeIndexPaths addObject:change.sourceIndexPath];
@@ -660,67 +671,51 @@ typedef dispatch_block_t ASDataControllerCompletionBlock;
 
   for (_ASHierarchyItemChange *change in [changeSet itemChangesOfType:_ASHierarchyChangeTypeDelete]) {
     [removalChangeIndexPaths addObjectsFromArray:change.indexPaths];
-    /*
-    [map removeItemsAtIndexPaths:change.indexPaths];
-    // Aggressively repopulate supplementary nodes (#1773 & #1629)
-    [self _repopulateSupplementaryNodesIntoMap:map forSectionsContainingIndexPaths:change.indexPaths
-                                     changeSet:changeSet
-                               traitCollection:traitCollection
-                              indexPathsAreNew:NO
-                         shouldFetchSizeRanges:shouldFetchSizeRanges
-                                   previousMap:previousMap];
-     */
   }
   
   // This may be a bit rogue flattening delete operations, but think makes most sense.
   if (removalChangeIndexPaths.count > 0) {
     [map removeItemsAtIndexPaths:[removalChangeIndexPaths sortedArrayUsingSelector:@selector(asdk_inverseCompare:)]];
+    // Aggressively repopulate supplementary nodes (#1773 & #1629)
     [self _repopulateSupplementaryNodesIntoMap:map forSectionsContainingIndexPaths:removalChangeIndexPaths
                                      changeSet:changeSet
                                traitCollection:traitCollection
                               indexPathsAreNew:NO
                          shouldFetchSizeRanges:shouldFetchSizeRanges
                                    previousMap:previousMap];
-
-    for (_ASHierarchySectionChange *change in [changeSet sectionChangesOfType:_ASHierarchyChangeTypeDelete]) {
-      NSIndexSet *sectionIndexes = change.indexSet;
-      [map removeSectionsOfItems:sectionIndexes];
-    }
   }
-  
+
+  for (_ASHierarchySectionChange *change in [changeSet sectionChangesOfType:_ASHierarchyChangeTypeDelete]) {
+    NSIndexSet *sectionIndexes = change.indexSet;
+    [map removeSectionsOfItems:sectionIndexes];
+  }
+
   for (_ASHierarchySectionChange *change in [changeSet sectionChangesOfType:_ASHierarchyChangeTypeInsert]) {
     [self _insertElementsIntoMap:map sections:change.indexSet traitCollection:traitCollection shouldFetchSizeRanges:shouldFetchSizeRanges changeSet:changeSet previousMap:previousMap];
   }
   
+  // Make this flat again so we can order everything together ascending
   NSMutableArray<NSIndexPath *> *insertChangeIndexPaths = [NSMutableArray array];
-  
-  [insertChangeIndexPaths addObjectsFromArray:movingDestinationIndexPaths];
+  [insertChangeIndexPaths addObjectsFromArray:_movingDestinationIndexPaths];
   
   for (_ASHierarchyItemChange *change in [changeSet itemChangesOfType:_ASHierarchyChangeTypeInsert]) {
     [insertChangeIndexPaths addObjectsFromArray:change.indexPaths];
-    /*
-    [self _insertElementsIntoMap:map kind:ASDataControllerRowNodeKind atIndexPaths:change.indexPaths traitCollection:traitCollection shouldFetchSizeRanges:shouldFetchSizeRanges changeSet:changeSet previousMap:previousMap];
+  }
+  
+  if (insertChangeIndexPaths.count > 0) {
+    [self _insertElementsIntoMap:map kind:ASDataControllerRowNodeKind atIndexPaths:[insertChangeIndexPaths sortedArrayUsingSelector:@selector(compare:)]
+                 traitCollection:traitCollection
+           shouldFetchSizeRanges:shouldFetchSizeRanges
+                       changeSet:changeSet previousMap:previousMap];
+  
     // Aggressively reload supplementary nodes (#1773 & #1629)
-    [self _repopulateSupplementaryNodesIntoMap:map forSectionsContainingIndexPaths:change.indexPaths
+    [self _repopulateSupplementaryNodesIntoMap:map forSectionsContainingIndexPaths:insertChangeIndexPaths
                                      changeSet:changeSet
                                traitCollection:traitCollection
                               indexPathsAreNew:YES
                          shouldFetchSizeRanges:shouldFetchSizeRanges
                                    previousMap:previousMap];
-     */
   }
-  
-  [self _insertElementsIntoMap:map kind:ASDataControllerRowNodeKind atIndexPaths:insertChangeIndexPaths
-               traitCollection:traitCollection
-         shouldFetchSizeRanges:shouldFetchSizeRanges
-                     changeSet:changeSet previousMap:previousMap];
-  
-  [self _repopulateSupplementaryNodesIntoMap:map forSectionsContainingIndexPaths:insertChangeIndexPaths
-                                   changeSet:changeSet
-                             traitCollection:traitCollection
-                            indexPathsAreNew:YES
-                       shouldFetchSizeRanges:shouldFetchSizeRanges
-                                 previousMap:previousMap];
 }
 
 - (void)_insertElementsIntoMap:(ASMutableElementMap *)map

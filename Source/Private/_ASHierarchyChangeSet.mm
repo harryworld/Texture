@@ -692,6 +692,7 @@ NSString *NSStringFromASHierarchyChangeType(_ASHierarchyChangeType changeType)
 {
   return 0 < (_originalDeleteSectionChanges.count + _originalDeleteItemChanges.count
               +_originalInsertSectionChanges.count + _originalInsertItemChanges.count
+              +_moveItemChanges.count
               + _reloadSectionChanges.count + _reloadItemChanges.count);
 }
 
