@@ -256,6 +256,26 @@ NSString *NSStringFromASHierarchyChangeType(_ASHierarchyChangeType changeType)
   return result;
 }
 
+- (NSIndexSet *)indexesForItemMoveToChangesInSection:(NSUInteger)section
+{
+  [self _ensureCompleted];
+  NSMutableIndexSet *result = [NSMutableIndexSet indexSet];
+  for (_ASHierarchyItemMoveChange *change in _moveItemChanges) {
+    [result addIndexes:[NSIndexSet as_indexSetFromIndexPaths:@[change.destinationIndexPath] inSection:section]];
+  }
+  return result;
+}
+
+- (NSIndexSet *)indexesForItemMoveFromChangesInSection:(NSUInteger)section
+{
+  [self _ensureCompleted];
+  NSMutableIndexSet *result = [NSMutableIndexSet indexSet];
+  for (_ASHierarchyItemMoveChange *change in _moveItemChanges) {
+    [result addIndexes:[NSIndexSet as_indexSetFromIndexPaths:@[change.sourceIndexPath] inSection:section]];
+  }
+  return result;
+}
+
 - (NSUInteger)newSectionForOldSection:(NSUInteger)oldSection
 {
   return [self.sectionMapping integerForKey:oldSection];
@@ -659,7 +679,17 @@ NSString *NSStringFromASHierarchyChangeType(_ASHierarchyChangeType changeType)
     }
     
     NSIndexSet *originalInsertedItems = [self indexesForItemChangesOfType:_ASHierarchyChangeTypeOriginalInsert inSection:newSection];
+    NSIndexSet *moveInsertedItems = [self indexesForItemMoveToChangesInSection:newSection];
+    NSMutableIndexSet *mergedInsert = [NSMutableIndexSet indexSet];
+    [mergedInsert addIndexes:originalInsertedItems];
+    [mergedInsert addIndexes:moveInsertedItems];
+    
     NSIndexSet *originalDeletedItems = [self indexesForItemChangesOfType:_ASHierarchyChangeTypeOriginalDelete inSection:oldSection];
+    NSIndexSet *moveDeletedItems = [self indexesForItemMoveFromChangesInSection:oldSection];
+    NSMutableIndexSet *mergedDelete = [NSMutableIndexSet indexSet];
+    [mergedDelete addIndexes:originalDeletedItems];
+    [mergedDelete addIndexes:moveDeletedItems];
+    
     NSIndexSet *reloadedItems = [self indexesForItemChangesOfType:_ASHierarchyChangeTypeReload inSection:oldSection];
     
     // Assert that no reloaded items were deleted.
@@ -671,8 +701,8 @@ NSString *NSStringFromASHierarchyChangeType(_ASHierarchyChangeType changeType)
     
     // Assert that the new item count is correct.
     NSInteger newItemCount = _newItemCounts[newSection];
-    NSInteger insertedItemCount = originalInsertedItems.count;
-    NSInteger deletedItemCount = originalDeletedItems.count;
+    NSInteger insertedItemCount = mergedInsert.count;
+    NSInteger deletedItemCount = mergedDelete.count;
     if (newItemCount != oldItemCount + insertedItemCount - deletedItemCount) {
       ASFailUpdateValidation(@"Invalid number of items in section %zd. The number of items after the update (%zd) must be equal to the number of items before the update (%zd) plus or minus the number of items inserted or deleted (%zd inserted, %zd deleted).", oldSection, newItemCount, oldItemCount, insertedItemCount, deletedItemCount);
       return;

@@ -375,7 +375,7 @@ typedef void (^ASDataControllerSynchronizationBlock)();
       constrainedSize = [self constrainedSizeForNodeOfKind:kind atIndexPath:indexPath];
     }
     
-    if ([_movingDestinationIndexPaths containsObject:indexPath]) {
+    if (isRowKind && [_movingDestinationIndexPaths containsObject:indexPath]) {
       ASCollectionElement *element = [_movingElements objectForKey:indexPath];
       [map insertElement:element atIndexPath:indexPath];
     } else {
