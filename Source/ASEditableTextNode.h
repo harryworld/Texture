@@ -64,6 +64,9 @@ NS_ASSUME_NONNULL_BEGIN
  */
 @property (nonatomic, readonly) UITextView *textView;
 
+@property (nonatomic) NSArray<UIKeyCommand *> *keyCommands;
+@property (nonatomic, copy) void (^handleCommandAction)(UIKeyCommand *command);
+
 //! @abstract The attributes to apply to new text being entered by the user.
 @property (nullable, nonatomic, copy) NSDictionary<NSString *, id> *typingAttributes;
 
