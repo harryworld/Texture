@@ -54,6 +54,15 @@
 
 @end
 
+@protocol ASPanningOverriddenUITextViewDelegate <NSObject>
+
+@optional
+
+- (NSArray *)keyCommands;
+- (void)processCommand:(UIKeyCommand *)command;
+
+@end
+
 /**
  @abstract As originally reported in rdar://14729288, when scrollEnabled = NO,
    UITextView does not calculate its contentSize. This makes it difficult 
@@ -71,6 +80,9 @@
 {
   BOOL _shouldBlockPanGesture;
 }
+
+@property (nonatomic, readwrite, weak) id <ASPanningOverriddenUITextViewDelegate> keyCommandsDelegate;
+
 @end
 
 @implementation ASPanningOverriddenUITextView
@@ -91,6 +103,20 @@
 }
 #endif
 
+- (NSArray *)keyCommands {
+  if ([_keyCommandsDelegate respondsToSelector:@selector(keyCommands)]) {
+    return [_keyCommandsDelegate keyCommands];
+  }
+  return nil;
+}
+
+- (void)handleCommand:(UIKeyCommand *)keyCommand
+{
+  if ([_keyCommandsDelegate respondsToSelector:@selector(processCommand:)]) {
+    return [_keyCommandsDelegate processCommand:keyCommand];
+  }
+}
+
 - (BOOL)gestureRecognizerShouldBegin:(UIGestureRecognizer *)gestureRecognizer
 {
   // Never allow our pans to begin when _shouldBlockPanGesture is true.
@@ -106,11 +132,12 @@
 @end
 
 #pragma mark -
-@interface ASEditableTextNode () <UITextViewDelegate, NSLayoutManagerDelegate>
+@interface ASEditableTextNode () <UITextViewDelegate, NSLayoutManagerDelegate, ASPanningOverriddenUITextViewDelegate>
 {
   @private
   // Configuration.
   NSDictionary *_typingAttributes;
+  NSArray *_keyCommands;
 
   // Core.
   id <ASEditableTextNodeDelegate> __weak _delegate;
@@ -213,7 +240,9 @@
   configureTextView(_placeholderTextKitComponents.textView);
 
   // Create and configure our text view.
-  _textKitComponents.textView = [[ASPanningOverriddenUITextView alloc] initWithFrame:CGRectZero textContainer:_textKitComponents.textContainer];
+  ASPanningOverriddenUITextView *overridenView = [[ASPanningOverriddenUITextView alloc] initWithFrame:CGRectZero textContainer:_textKitComponents.textContainer];
+  overridenView.keyCommandsDelegate = self;
+  _textKitComponents.textView = overridenView;
   _textKitComponents.textView.scrollEnabled = _scrollEnabled;
   _textKitComponents.textView.delegate = self;
   #if TARGET_OS_IOS
@@ -325,6 +354,24 @@
 {
   _maximumLinesToDisplay = maximumLines;
   [self setNeedsLayout];
+}
+
+#pragma mark -
+@dynamic keyCommands;
+
+- (NSArray *)keyCommands
+{
+  return _keyCommands;
+}
+
+- (void)setKeyCommands:(NSArray<UIKeyCommand *>*)keyCommands
+{
+  _keyCommands = [keyCommands copy];
+}
+
+- (void)processCommand:(UIKeyCommand *)command
+{
+  self.handleCommandAction(command);
 }
 
 #pragma mark -
