@@ -419,7 +419,9 @@
 
 - (void)processPaste
 {
-  self.handlePasteImage();
+  if (self.handlePaste != nil) {
+    self.handlePaste();
+  }
 }
 
 #pragma mark -
