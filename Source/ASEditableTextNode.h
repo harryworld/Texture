@@ -60,6 +60,8 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, copy) void (^handleCommandAction)(UIKeyCommand *command);
 @property (nonatomic, copy) BOOL (^handleCanPerformPaste)(void);
 @property (nonatomic, copy) void (^handlePaste)(void);
+@property (nonatomic, copy) void (^handleCut)(void);
+@property (nonatomic, copy) void (^handleCopy)(void);
 
 //! @abstract The attributes to apply to new text being entered by the user.
 @property (nullable, nonatomic, copy) NSDictionary<NSString *, id> *typingAttributes;

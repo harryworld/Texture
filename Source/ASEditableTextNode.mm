@@ -62,6 +62,8 @@
 - (void)processCommand:(UIKeyCommand *)command;
 - (BOOL)canPerformPaste;
 - (void)processPaste;
+- (void)processCut;
+- (void)processCopy;
 
 @end
 
@@ -156,6 +158,23 @@
   }
 }
 
+- (void)cut:(id)sender
+{
+  if ([_keyCommandsDelegate respondsToSelector:@selector(processCut)]) {
+    return [_keyCommandsDelegate processCut];
+  } else {
+    return [super cut:sender];
+  }
+}
+
+- (void)copy:(id)sender
+{
+  if ([_keyCommandsDelegate respondsToSelector:@selector(processCopy)]) {
+    return [_keyCommandsDelegate processCopy];
+  } else {
+    return [super copy:sender];
+  }
+}
 
 @end
 
@@ -415,6 +434,20 @@
 {
   if (self.handlePaste != nil) {
     self.handlePaste();
+  }
+}
+
+- (void)processCut
+{
+  if (self.handleCut != nil) {
+    self.handleCut();
+  }
+}
+
+- (void)processCopy
+{
+  if (self.handleCopy != nil) {
+    self.handleCopy();
   }
 }
 
