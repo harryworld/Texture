@@ -60,6 +60,7 @@
 
 - (NSArray *)keyCommands;
 - (void)processCommand:(UIKeyCommand *)command;
+- (BOOL)canPerformPaste;
 - (void)processPaste;
 
 @end
@@ -132,13 +133,9 @@
 
 - (BOOL)canPerformAction:(SEL)action withSender:(id)sender
 {
-  // Note: Importing MobileCoreServices does not work for arm64 architecture
-  //       Hence `com.apple.flat-rtfd` instead of `kUTTypeFlatRTFD`
   if (action == @selector(paste:)) {
-    UIPasteboard *pasteboard = [UIPasteboard generalPasteboard];
-    NSArray *types = pasteboard.pasteboardTypes;
-    if ([types containsObject:@"com.apple.flat-rtfd"]) {
-      return true;
+    if ([_keyCommandsDelegate respondsToSelector:@selector(canPerformPaste)]) {
+      return [_keyCommandsDelegate canPerformPaste];
     }
   }
   return [super canPerformAction:action withSender:sender];
@@ -146,10 +143,13 @@
 
 - (void)paste:(id)sender
 {
-  UIPasteboard *pasteboard = [UIPasteboard generalPasteboard];
-  NSArray *types = pasteboard.pasteboardTypes;
-  BOOL containsRTF = [types containsObject:@"com.apple.flat-rtfd"];
-  if (containsRTF && [_keyCommandsDelegate respondsToSelector:@selector(processPaste)]) {
+  BOOL canPerformPaste;
+  if ([_keyCommandsDelegate respondsToSelector:@selector(canPerformPaste)]) {
+    canPerformPaste = [_keyCommandsDelegate canPerformPaste];
+  } else {
+    canPerformPaste = FALSE;
+  }
+  if (canPerformPaste && [_keyCommandsDelegate respondsToSelector:@selector(processPaste)]) {
     return [_keyCommandsDelegate processPaste];
   } else {
     return [super paste:sender];
@@ -400,6 +400,15 @@
 - (void)processCommand:(UIKeyCommand *)command
 {
   self.handleCommandAction(command);
+}
+
+- (BOOL)canPerformPaste
+{
+  if (self.handleCanPerformPaste != nil) {
+    return self.handleCanPerformPaste();
+  } else {
+    return FALSE;
+  }
 }
 
 - (void)processPaste
