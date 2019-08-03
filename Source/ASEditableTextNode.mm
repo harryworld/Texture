@@ -145,7 +145,12 @@
 {
   if (action == @selector(paste:)) {
     if ([_keyCommandsDelegate respondsToSelector:@selector(canPerformPaste)]) {
-      return [_keyCommandsDelegate canPerformPaste];
+      BOOL result = [_keyCommandsDelegate canPerformPaste];
+      if (result) {
+        return TRUE;
+      } else {
+        return [super canPerformAction:action withSender:sender];
+      }
     }
   }
   return [super canPerformAction:action withSender:sender];
