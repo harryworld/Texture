@@ -2282,6 +2282,11 @@ static NSString * const kReuseIdentifier = @"_ASCollectionReuseIdentifier";
             [super insertItemsAtIndexPaths:change.indexPaths];
             numberOfUpdates++;
           }
+          
+          for (_ASHierarchyItemMoveChange *change in [changeSet itemChangesOfType:_ASHierarchyChangeTypeMove]) {
+            [super moveItemAtIndexPath:change.sourceIndexPath toIndexPath:change.destinationIndexPath];
+            numberOfUpdates++;
+          }
         } completion:completion];
       }
 
