@@ -9,9 +9,9 @@
 
 #import <AsyncDisplayKit/ASMultiplexImageNode.h>
 
-#if TARGET_OS_IOS && AS_USE_ASSETS_LIBRARY
-#import <AssetsLibrary/AssetsLibrary.h>
-#endif
+//#if TARGET_OS_IOS && AS_USE_ASSETS_LIBRARY
+//#import <AssetsLibrary/AssetsLibrary.h>
+//#endif
 
 #import <AsyncDisplayKit/ASAvailability.h>
 #import <AsyncDisplayKit/ASDisplayNodeExtras.h>
@@ -690,17 +690,17 @@ typedef void(^ASMultiplexImageLoadCompletionBlock)(UIImage *image, id imageIdent
   // We'll drop support very soon.
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
-  ALAssetsLibrary *assetLibrary = [[ALAssetsLibrary alloc] init];
-
-  [assetLibrary assetForURL:assetURL resultBlock:^(ALAsset *asset) {
-    ALAssetRepresentation *representation = [asset defaultRepresentation];
-    CGImageRef coreGraphicsImage = [representation fullScreenImage];
-
-    UIImage *downloadedImage = (coreGraphicsImage ? [UIImage imageWithCGImage:coreGraphicsImage] : nil);
-    completionBlock(downloadedImage, nil);
-  } failureBlock:^(NSError *error) {
-    completionBlock(nil, error);
-  }];
+//  ALAssetsLibrary *assetLibrary = [[ALAssetsLibrary alloc] init];
+//
+//  [assetLibrary assetForURL:assetURL resultBlock:^(ALAsset *asset) {
+//    ALAssetRepresentation *representation = [asset defaultRepresentation];
+//    CGImageRef coreGraphicsImage = [representation fullScreenImage];
+//
+//    UIImage *downloadedImage = (coreGraphicsImage ? [UIImage imageWithCGImage:coreGraphicsImage] : nil);
+//    completionBlock(downloadedImage, nil);
+//  } failureBlock:^(NSError *error) {
+//    completionBlock(nil, error);
+//  }];
 #pragma clang diagnostic pop
 }
 #endif
