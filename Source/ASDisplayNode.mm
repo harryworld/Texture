@@ -65,7 +65,7 @@ static ASDisplayNodeNonFatalErrorBlock _nonFatalErrorBlock = nil;
 // We have to forward declare the protocol as this place otherwise it will not compile compiling with an Base SDK < iOS 10
 @protocol CALayerDelegate;
 
-@interface ASDisplayNode () <UIGestureRecognizerDelegate, CALayerDelegate, _ASDisplayLayerDelegate, ASCATransactionQueueObserving>
+@interface ASDisplayNode () <UIGestureRecognizerDelegate, CALayerDelegate, _ASDisplayLayerDelegate, ASCATransactionQueueObserving, _ASDisplayViewDelegate>
 /**
  * See ASDisplayNodeInternal.h for ivars
  */
@@ -475,7 +475,13 @@ ASSynthesizeLockingMethodsWithMutex(__instanceLock__);
     _viewBlock = nil;
     _viewClass = [view class];
   } else {
-    view = [[_viewClass alloc] init];
+    // Hook UIView keyCommands to ASDisplayNode
+    UIView *baseView = [[_viewClass alloc] init];
+    if ([baseView isKindOfClass:[_ASDisplayView class]]) {
+      _ASDisplayView *underlyingView = (_ASDisplayView *)baseView;
+      underlyingView.keyCommandsDelegate = self;
+    }
+    view = baseView;
   }
   
   // Special handling of wrapping UIKit components
@@ -644,6 +650,24 @@ ASSynthesizeLockingMethodsWithMutex(__instanceLock__);
   [self _didLoad];
 
   return _view;
+}
+
+#pragma mark -
+@dynamic keyCommands;
+
+- (NSArray *)keyCommands
+{
+  return _keyCommands;
+}
+
+- (void)setKeyCommands:(NSArray<UIKeyCommand *>*)keyCommands
+{
+  _keyCommands = [keyCommands copy];
+}
+
+- (void)processCommand:(UIKeyCommand *)command
+{
+  self.handleCommandAction(command);
 }
 
 - (CALayer *)layer

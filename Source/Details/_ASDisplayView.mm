@@ -83,6 +83,21 @@ static _ASDisplayViewMethodOverrides GetASDisplayViewMethodOverrides(Class c)
   _ASDisplayViewMethodOverrides _methodOverrides;
 }
 
+- (NSArray *)keyCommands
+{
+  if ([self.keyCommandsDelegate respondsToSelector:@selector(keyCommands)]) {
+    return [self.keyCommandsDelegate keyCommands];
+  }
+  return nil;
+}
+
+- (void)handleCommand:(UIKeyCommand *)keyCommand
+{
+  if ([_keyCommandsDelegate respondsToSelector:@selector(processCommand:)]) {
+    return [_keyCommandsDelegate processCommand:keyCommand];
+  }
+}
+
 #pragma mark - Class
 
 + (void)initialize

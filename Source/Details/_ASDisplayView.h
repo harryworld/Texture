@@ -16,7 +16,18 @@ NS_ASSUME_NONNULL_BEGIN
 
 @class ASDisplayNode;
 
+@protocol _ASDisplayViewDelegate <NSObject>
+
+@optional
+
+- (NSArray *)keyCommands;
+- (void)processCommand:(UIKeyCommand *)command;
+
+@end
+
 @interface _ASDisplayView : UIView
+
+@property (nonatomic, readwrite, weak) id <_ASDisplayViewDelegate> keyCommandsDelegate;
 
 /**
  @discussion This property overrides the UIView category method which implements this via associated objects.
