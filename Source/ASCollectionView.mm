@@ -346,6 +346,24 @@ static NSString * const kReuseIdentifier = @"_ASCollectionReuseIdentifier";
 #pragma mark -
 #pragma mark Overrides.
 
+#if TARGET_OS_MACCATALYST
+- (NSArray<UIKeyCommand *> *)keyCommands
+{
+  NSArray<NSString *> *ignoredCommands = @[UIKeyInputUpArrow, UIKeyInputDownArrow, UIKeyInputLeftArrow, UIKeyInputRightArrow];
+  NSMutableArray<UIKeyCommand *> *supportCommands = [[NSMutableArray<UIKeyCommand *> alloc] initWithCapacity:[super keyCommands].count];
+  for (UIKeyCommand *command in [super keyCommands]) {
+    if (command.modifierFlags > 0) {
+      [supportCommands addObject:command];
+      break;
+    }
+    if (![ignoredCommands containsObject:command.input]) {
+      [supportCommands addObject:command];
+    }
+  }
+  return supportCommands;
+}
+#endif
+
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-implementations"
 /**
