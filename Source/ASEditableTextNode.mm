@@ -64,6 +64,8 @@
 - (void)processPaste;
 - (void)processCut;
 - (void)processCopy;
+- (NSArray<NSString *> *)customSelectors;
+- (BOOL)canPerformCustomAction:(SEL)action;
 
 @end
 
@@ -121,6 +123,13 @@
   }
 }
 
+- (NSArray<NSString *> *)customSelectors {
+  if ([_keyCommandsDelegate respondsToSelector:@selector(customSelectors)]) {
+    return [_keyCommandsDelegate customSelectors];
+  }
+  return nil;
+}
+
 - (BOOL)gestureRecognizerShouldBegin:(UIGestureRecognizer *)gestureRecognizer
 {
   // Never allow our pans to begin when _shouldBlockPanGesture is true.
@@ -135,6 +144,17 @@
 
 - (BOOL)canPerformAction:(SEL)action withSender:(id)sender
 {
+  return FALSE;
+  // Determined by hosting app for chosen selectors
+  for (NSString *selectorName in [self customSelectors]) {
+    SEL selector = NSSelectorFromString(selectorName);
+    if (action == selector) {
+      BOOL result = [_keyCommandsDelegate canPerformCustomAction:selector];
+      return result;
+    }
+  }
+  // Handled by hosting app only if it is able to handle
+  // Otherwise, pass to super view to handle
   if (action == @selector(paste:)) {
     if ([_keyCommandsDelegate respondsToSelector:@selector(canPerformPaste)]) {
       BOOL result = [_keyCommandsDelegate canPerformPaste];
@@ -190,6 +210,7 @@
   // Configuration.
   NSDictionary *_typingAttributes;
   NSArray *_keyCommands;
+  NSArray *_customSelectors;
 
   // Core.
   id <ASEditableTextNodeDelegate> __weak _delegate;
@@ -453,6 +474,22 @@
 {
   if (self.handleCopy != nil) {
     self.handleCopy();
+  }
+}
+
+@dynamic customSelectors;
+
+- (NSArray<NSString *> *)customSelectors
+{
+  return _customSelectors;
+}
+
+- (BOOL)canPerformCustomAction:(SEL)action
+{
+  if (self.canPerformCustomAction != nil) {
+    return self.canPerformCustomAction(NSStringFromSelector(action));
+  } else {
+    return FALSE;
   }
 }
 
