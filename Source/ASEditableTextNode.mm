@@ -64,8 +64,8 @@
 - (void)processPaste;
 - (void)processCut;
 - (void)processCopy;
-- (NSArray<NSString *> *)customSelectors;
-- (BOOL)canPerformCustomAction:(SEL)action;
+- (NSSet<NSString *> *)nodeHandledActionSelectors;
+- (BOOL)canPerformAction:(SEL)action withSender:(id)sender;
 
 @end
 
@@ -123,9 +123,9 @@
   }
 }
 
-- (NSArray<NSString *> *)customSelectors {
-  if ([_keyCommandsDelegate respondsToSelector:@selector(customSelectors)]) {
-    return [_keyCommandsDelegate customSelectors];
+- (NSSet<NSString *> *)nodeHandledActionSelectors {
+  if ([_keyCommandsDelegate respondsToSelector:@selector(nodeHandledActionSelectors)]) {
+    return [_keyCommandsDelegate nodeHandledActionSelectors];
   }
   return nil;
 }
@@ -144,28 +144,25 @@
 
 - (BOOL)canPerformAction:(SEL)action withSender:(id)sender
 {
-  return FALSE;
-  // Determined by hosting app for chosen selectors
-  for (NSString *selectorName in [self customSelectors]) {
-    SEL selector = NSSelectorFromString(selectorName);
-    if (action == selector) {
-      BOOL result = [_keyCommandsDelegate canPerformCustomAction:selector];
-      return result;
-    }
-  }
-  // Handled by hosting app only if it is able to handle
-  // Otherwise, pass to super view to handle
-  if (action == @selector(paste:)) {
-    if ([_keyCommandsDelegate respondsToSelector:@selector(canPerformPaste)]) {
-      BOOL result = [_keyCommandsDelegate canPerformPaste];
-      if (result) {
-        return TRUE;
-      } else {
+    // Determined by hosting app for chosen selectors
+    if ([[self nodeHandledActionSelectors] containsObject: NSStringFromSelector(action)]) {
+        return [_keyCommandsDelegate canPerformAction:action withSender:sender];
+    } else {
+        // Handled by hosting app only if it is able to handle
+        // Otherwise, pass to super view to handle
+        if (action == @selector(paste:)) {
+            if ([_keyCommandsDelegate respondsToSelector:@selector(canPerformPaste)]) {
+                BOOL result = [_keyCommandsDelegate canPerformPaste];
+                if (result) {
+                    return TRUE;
+                } else {
+                    return [super canPerformAction:action withSender:sender];
+                }
+            }
+        }
         return [super canPerformAction:action withSender:sender];
-      }
     }
-  }
-  return [super canPerformAction:action withSender:sender];
+    
 }
 
 - (void)paste:(id)sender
@@ -210,7 +207,7 @@
   // Configuration.
   NSDictionary *_typingAttributes;
   NSArray *_keyCommands;
-  NSArray *_customSelectors;
+  NSArray *_nodeHandledActionSelectors;
 
   // Core.
   id <ASEditableTextNodeDelegate> __weak _delegate;
@@ -477,20 +474,11 @@
   }
 }
 
-@dynamic customSelectors;
+@dynamic nodeHandledActionSelectors;
 
-- (NSArray<NSString *> *)customSelectors
+- (NSArray<NSString *> *)nodeHandledActionSelectors
 {
-  return _customSelectors;
-}
-
-- (BOOL)canPerformCustomAction:(SEL)action
-{
-  if (self.canPerformCustomAction != nil) {
-    return self.canPerformCustomAction(NSStringFromSelector(action));
-  } else {
-    return FALSE;
-  }
+  return _nodeHandledActionSelectors;
 }
 
 #pragma mark -
