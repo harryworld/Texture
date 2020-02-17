@@ -82,12 +82,13 @@
 
  See issue: https://github.com/facebook/AsyncDisplayKit/issues/1063
  */
-@interface ASPanningOverriddenUITextView : ASTextKitComponentsTextView
+@interface ASPanningOverriddenUITextView : ASTextKitComponentsTextView <ASEditableTextView>
 {
   BOOL _shouldBlockPanGesture;
 }
 
 @property (nonatomic, readwrite, weak) id <ASPanningOverriddenUITextViewDelegate> keyCommandsDelegate;
+@property (nonatomic, readwrite, weak) ASEditableTextNode* textNode;
 
 @end
 
@@ -312,6 +313,7 @@
   // Create and configure our text view.
   ASPanningOverriddenUITextView *overridenView = [[ASPanningOverriddenUITextView alloc] initWithFrame:CGRectZero textContainer:_textKitComponents.textContainer];
   overridenView.keyCommandsDelegate = self;
+  overridenView.textNode = self;
   _textKitComponents.textView = overridenView;
   _textKitComponents.textView.scrollEnabled = _scrollEnabled;
   _textKitComponents.textView.delegate = self;

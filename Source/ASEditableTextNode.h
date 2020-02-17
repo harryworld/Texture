@@ -13,6 +13,7 @@
 NS_ASSUME_NONNULL_BEGIN
 
 @protocol ASEditableTextNodeDelegate;
+@protocol ASEditableTextView;
 @class ASTextKitComponents;
 
 /**
@@ -211,6 +212,14 @@ NS_ASSUME_NONNULL_BEGIN
   @discussion The invocation of this method coincides with the keyboard animating to become hidden.
  */
 - (void)editableTextNodeDidFinishEditing:(ASEditableTextNode *)editableTextNode;
+
+@end
+
+@protocol ASEditableTextView <NSObject>
+
+@required
+@property ASEditableTextNode *textNode;
+@property UIWindow *window;
 
 @end
 
