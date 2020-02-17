@@ -64,7 +64,6 @@
 - (void)processPaste;
 - (void)processCut;
 - (void)processCopy;
-- (NSSet<NSString *> *)nodeHandledActionSelectors;
 - (BOOL)canPerformAction:(SEL)action withSender:(id)sender;
 
 @end
@@ -124,13 +123,6 @@
   }
 }
 
-- (NSSet<NSString *> *)nodeHandledActionSelectors {
-  if ([_keyCommandsDelegate respondsToSelector:@selector(nodeHandledActionSelectors)]) {
-    return [_keyCommandsDelegate nodeHandledActionSelectors];
-  }
-  return nil;
-}
-
 - (BOOL)gestureRecognizerShouldBegin:(UIGestureRecognizer *)gestureRecognizer
 {
   // Never allow our pans to begin when _shouldBlockPanGesture is true.
@@ -145,25 +137,19 @@
 
 - (BOOL)canPerformAction:(SEL)action withSender:(id)sender
 {
-    // Determined by hosting app for chosen selectors
-    if ([[self nodeHandledActionSelectors] containsObject: NSStringFromSelector(action)]) {
-        return [_keyCommandsDelegate canPerformAction:action withSender:sender];
-    } else {
-        // Handled by hosting app only if it is able to handle
-        // Otherwise, pass to super view to handle
-        if (action == @selector(paste:)) {
-            if ([_keyCommandsDelegate respondsToSelector:@selector(canPerformPaste)]) {
-                BOOL result = [_keyCommandsDelegate canPerformPaste];
-                if (result) {
-                    return TRUE;
-                } else {
-                    return [super canPerformAction:action withSender:sender];
-                }
+    // Handled by hosting app only if it is able to handle
+    // Otherwise, pass to super view to handle
+    if (action == @selector(paste:)) {
+        if ([_keyCommandsDelegate respondsToSelector:@selector(canPerformPaste)]) {
+            BOOL result = [_keyCommandsDelegate canPerformPaste];
+            if (result) {
+                return TRUE;
+            } else {
+                return [super canPerformAction:action withSender:sender];
             }
         }
-        return [super canPerformAction:action withSender:sender];
     }
-    
+    return [super canPerformAction:action withSender:sender];
 }
 
 - (void)paste:(id)sender
@@ -208,7 +194,6 @@
   // Configuration.
   NSDictionary *_typingAttributes;
   NSArray *_keyCommands;
-  NSArray *_nodeHandledActionSelectors;
 
   // Core.
   id <ASEditableTextNodeDelegate> __weak _delegate;
@@ -474,13 +459,6 @@
   if (self.handleCopy != nil) {
     self.handleCopy();
   }
-}
-
-@dynamic nodeHandledActionSelectors;
-
-- (NSArray<NSString *> *)nodeHandledActionSelectors
-{
-  return _nodeHandledActionSelectors;
 }
 
 #pragma mark -

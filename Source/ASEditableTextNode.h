@@ -58,7 +58,6 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, readonly) UITextView *textView;
 
 @property (nonatomic) NSArray<UIKeyCommand *> *keyCommands;
-@property (nonatomic, copy) void (^handleCommandAction)(UIKeyCommand *command);
 @property (nonatomic, copy) BOOL (^handleCanPerformPaste)(void);
 @property (nonatomic, copy) void (^handlePaste)(void);
 @property (nonatomic, copy) void (^handleCut)(void);
