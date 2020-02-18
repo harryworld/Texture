@@ -86,7 +86,7 @@
 }
 
 @property (nonatomic, readwrite, weak) id <ASPanningOverriddenUITextViewDelegate> keyCommandsDelegate;
-@property (nonatomic) ASEditableTextNode* textNode;
+@property (nonatomic, weak) ASEditableTextNode* textNode;
 
 @end
 
