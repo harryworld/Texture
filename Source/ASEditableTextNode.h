@@ -209,8 +209,7 @@ NS_ASSUME_NONNULL_BEGIN
 @protocol ASEditableTextView <NSObject>
 
 @required
-@property ASEditableTextNode *textNode;
-@property UIWindow *window;
+@property (nonatomic) ASEditableTextNode *textNode;
 
 @end
 
