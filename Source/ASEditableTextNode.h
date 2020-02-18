@@ -57,18 +57,10 @@ NS_ASSUME_NONNULL_BEGIN
  */
 @property (nonatomic, readonly) UITextView *textView;
 
-@property (nonatomic) NSArray<UIKeyCommand *> *keyCommands;
 @property (nonatomic, copy) BOOL (^handleCanPerformPaste)(void);
 @property (nonatomic, copy) void (^handlePaste)(void);
 @property (nonatomic, copy) void (^handleCut)(void);
 @property (nonatomic, copy) void (^handleCopy)(void);
-
-/**
- Sorted Modification
- We use this to whitelist specific selectors that we want the ASEditableTextNode to
- handle "canPerformAction:" instead of the "UITextView".
- */
-@property (nonatomic) NSSet<NSString *> *nodeHandledActionSelectors;
 
 //! @abstract The attributes to apply to new text being entered by the user.
 @property (nullable, nonatomic, copy) NSDictionary<NSString *, id> *typingAttributes;

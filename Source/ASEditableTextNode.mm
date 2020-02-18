@@ -64,7 +64,6 @@
 - (void)processPaste;
 - (void)processCut;
 - (void)processCopy;
-- (BOOL)canPerformAction:(SEL)action withSender:(id)sender;
 
 @end
 
@@ -137,19 +136,19 @@
 
 - (BOOL)canPerformAction:(SEL)action withSender:(id)sender
 {
-    // Handled by hosting app only if it is able to handle
-    // Otherwise, pass to super view to handle
-    if (action == @selector(paste:)) {
-        if ([_keyCommandsDelegate respondsToSelector:@selector(canPerformPaste)]) {
-            BOOL result = [_keyCommandsDelegate canPerformPaste];
-            if (result) {
-                return TRUE;
-            } else {
-                return [super canPerformAction:action withSender:sender];
-            }
-        }
+  // Handled by hosting app only if it is able to handle
+  // Otherwise, pass to super view to handle
+  if (action == @selector(paste:)) {
+    if ([_keyCommandsDelegate respondsToSelector:@selector(canPerformPaste)]) {
+      BOOL result = [_keyCommandsDelegate canPerformPaste];
+      if (result) {
+        return TRUE;
+      } else {
+        return [super canPerformAction:action withSender:sender];
+      }
     }
-    return [super canPerformAction:action withSender:sender];
+  }
+  return [super canPerformAction:action withSender:sender];
 }
 
 - (void)paste:(id)sender
