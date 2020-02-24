@@ -349,12 +349,34 @@ static NSString * const kReuseIdentifier = @"_ASCollectionReuseIdentifier";
 #if TARGET_OS_MACCATALYST
 - (NSArray<UIKeyCommand *> *)keyCommands
 {
+  // Note: This is to ignore system commands available to
+  //       Mac Catalyst.
+  // e.g. Default arrow keys are captured by collection view
+  //      to navigate among cells
+  // https://twitter.com/harryworld/status/1223545144277815296?s=20
   NSArray<NSString *> *ignoredCommands = @[UIKeyInputUpArrow, UIKeyInputDownArrow, UIKeyInputLeftArrow, UIKeyInputRightArrow];
   NSMutableArray<UIKeyCommand *> *supportCommands = [[NSMutableArray<UIKeyCommand *> alloc] initWithCapacity:[super keyCommands].count];
   for (UIKeyCommand *command in [super keyCommands]) {
-    if (command.modifierFlags > 0) {
-      [supportCommands addObject:command];
-      break;
+    switch (command.modifierFlags) {
+      case UIKeyModifierAlphaShift:
+      case UIKeyModifierControl:
+      case UIKeyModifierNumericPad:
+        // If the modifiers include one of this,
+        // support this command implemented by system.
+        [supportCommands addObject:command];
+        break;
+      case UIKeyModifierShift:
+      case UIKeyModifierAlternate:
+      case UIKeyModifierCommand:
+        // Full native keyboard support on editing text view
+        // should include the modifiers with combinations
+        // - Command + Arrows
+        // - Alternate + Arrows
+        // - Shift + Arrows
+        // - Command + Shift + Arrows
+        // - Alternate + Shift + Arrows
+      default:
+        break;
     }
     if (![ignoredCommands containsObject:command.input]) {
       [supportCommands addObject:command];
