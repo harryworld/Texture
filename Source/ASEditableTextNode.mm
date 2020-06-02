@@ -54,7 +54,7 @@
 
 @end
 
-@protocol ASPanningOverriddenUITextViewDelegate <NSObject>
+@protocol ASTextViewDelegate <NSObject>
 
 @optional
 
@@ -64,6 +64,8 @@
 - (void)processPaste;
 - (void)processCut;
 - (void)processCopy;
+
+- (CGRect)caretRect:(CGRect)originalRect forPosition:(UITextPosition *)position;
 
 @end
 
@@ -85,7 +87,7 @@
   BOOL _shouldBlockPanGesture;
 }
 
-@property (nonatomic, readwrite, weak) id <ASPanningOverriddenUITextViewDelegate> keyCommandsDelegate;
+@property (nonatomic, readwrite, weak) id <ASTextViewDelegate> textViewDelegate;
 @property (nonatomic, weak) ASEditableTextNode* textNode;
 
 @end
@@ -109,16 +111,16 @@
 #endif
 
 - (NSArray *)keyCommands {
-  if ([_keyCommandsDelegate respondsToSelector:@selector(keyCommands)]) {
-    return [_keyCommandsDelegate keyCommands];
+  if ([_textViewDelegate respondsToSelector:@selector(keyCommands)]) {
+    return [_textViewDelegate keyCommands];
   }
   return nil;
 }
 
 - (void)handleCommand:(UIKeyCommand *)keyCommand
 {
-  if ([_keyCommandsDelegate respondsToSelector:@selector(processCommand:)]) {
-    return [_keyCommandsDelegate processCommand:keyCommand];
+  if ([_textViewDelegate respondsToSelector:@selector(processCommand:)]) {
+    return [_textViewDelegate processCommand:keyCommand];
   }
 }
 
@@ -139,8 +141,8 @@
   // Handled by hosting app only if it is able to handle
   // Otherwise, pass to super view to handle
   if (action == @selector(paste:)) {
-    if ([_keyCommandsDelegate respondsToSelector:@selector(canPerformPaste)]) {
-      BOOL result = [_keyCommandsDelegate canPerformPaste];
+    if ([_textViewDelegate respondsToSelector:@selector(canPerformPaste)]) {
+      BOOL result = [_textViewDelegate canPerformPaste];
       if (result) {
         return TRUE;
       } else {
@@ -154,13 +156,13 @@
 - (void)paste:(id)sender
 {
   BOOL canPerformPaste;
-  if ([_keyCommandsDelegate respondsToSelector:@selector(canPerformPaste)]) {
-    canPerformPaste = [_keyCommandsDelegate canPerformPaste];
+  if ([_textViewDelegate respondsToSelector:@selector(canPerformPaste)]) {
+    canPerformPaste = [_textViewDelegate canPerformPaste];
   } else {
     canPerformPaste = FALSE;
   }
-  if (canPerformPaste && [_keyCommandsDelegate respondsToSelector:@selector(processPaste)]) {
-    return [_keyCommandsDelegate processPaste];
+  if (canPerformPaste && [_textViewDelegate respondsToSelector:@selector(processPaste)]) {
+    return [_textViewDelegate processPaste];
   } else {
     return [super paste:sender];
   }
@@ -168,8 +170,8 @@
 
 - (void)cut:(id)sender
 {
-  if ([_keyCommandsDelegate respondsToSelector:@selector(processCut)]) {
-    return [_keyCommandsDelegate processCut];
+  if ([_textViewDelegate respondsToSelector:@selector(processCut)]) {
+    return [_textViewDelegate processCut];
   } else {
     return [super cut:sender];
   }
@@ -177,17 +179,23 @@
 
 - (void)copy:(id)sender
 {
-  if ([_keyCommandsDelegate respondsToSelector:@selector(processCopy)]) {
-    return [_keyCommandsDelegate processCopy];
+  if ([_textViewDelegate respondsToSelector:@selector(processCopy)]) {
+    return [_textViewDelegate processCopy];
   } else {
     return [super copy:sender];
   }
 }
 
+- (CGRect)caretRectForPosition:(UITextPosition *)position
+{
+  CGRect rect = [super caretRectForPosition:position];
+  return [_textViewDelegate caretRect:rect forPosition:position];
+}
+
 @end
 
 #pragma mark -
-@interface ASEditableTextNode () <UITextViewDelegate, NSLayoutManagerDelegate, ASPanningOverriddenUITextViewDelegate>
+@interface ASEditableTextNode () <UITextViewDelegate, NSLayoutManagerDelegate, ASTextViewDelegate>
 {
   @private
   // Configuration.
@@ -296,7 +304,7 @@
 
   // Create and configure our text view.
   ASPanningOverriddenUITextView *overridenView = [[ASPanningOverriddenUITextView alloc] initWithFrame:CGRectZero textContainer:_textKitComponents.textContainer];
-  overridenView.keyCommandsDelegate = self;
+  overridenView.textViewDelegate = self;
   overridenView.textNode = self;
   _textKitComponents.textView = overridenView;
   _textKitComponents.textView.scrollEnabled = _scrollEnabled;
@@ -458,6 +466,12 @@
   if (self.handleCopy != nil) {
     self.handleCopy();
   }
+}
+
+#pragma mark -
+- (CGRect)caretRect:(CGRect)originalRect forPosition:(UITextPosition *)position
+{
+  return originalRect;
 }
 
 #pragma mark -

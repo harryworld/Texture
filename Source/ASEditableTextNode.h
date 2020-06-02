@@ -62,6 +62,12 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, copy) void (^handleCut)(void);
 @property (nonatomic, copy) void (^handleCopy)(void);
 
+/**
+ @abstract Calculates the caret rect
+ @discussion Set the caret rect in subclass, or returns its original rect.
+ */
+- (CGRect)caretRect:(CGRect)originalRect forPosition:(UITextPosition *)position;
+
 //! @abstract The attributes to apply to new text being entered by the user.
 @property (nullable, nonatomic, copy) NSDictionary<NSString *, id> *typingAttributes;
 
