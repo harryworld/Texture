@@ -98,8 +98,6 @@ AS_EXTERN NSInteger const ASDefaultDrawingPriority;
 
 /** @name Initializing a node object */
 
-@property (nonatomic) NSArray<UIKeyCommand *> *keyCommands;
-@property (nonatomic, copy) void (^handleCommandAction)(UIKeyCommand *command);
 
 /** 
  * @abstract Designated initializer.
