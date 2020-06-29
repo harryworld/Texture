@@ -600,6 +600,19 @@ ASSynthesizeLockingMethodsWithMutex(__instanceLock__);
 
 #pragma mark - Misc Setter / Getter
 
+#pragma mark -
+@dynamic keyCommands;
+
+- (NSArray *)keyCommands
+{
+  return _keyCommands;
+}
+
+- (void)setKeyCommands:(NSArray<UIKeyCommand *>*)keyCommands
+{
+  _keyCommands = [keyCommands copy];
+}
+
 - (UIView *)view
 {
   ASDN::UniqueLock l(__instanceLock__);

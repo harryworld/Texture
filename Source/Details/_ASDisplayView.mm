@@ -495,11 +495,38 @@ IMPLEMENT_RESPONDER_METHOD(isFirstResponder,
                              ASDisplayNodeMethodOverrideIsFirstResponder,
                              _ASDisplayViewMethodOverrideIsFirstResponder);
 
+- (NSArray *)keyCommands
+{
+  NSArray *nodeCommands = [self nodeKeyCommands];
+  if (nodeCommands == NULL) {
+    return [super keyCommands];
+  }
+  return nodeCommands;
+}
+
+- (NSArray *)nodeKeyCommands
+{
+  if ([_asyncdisplaykit_node respondsToSelector:@selector(keyCommands)]) {
+    NSArray *keyCommands = [_asyncdisplaykit_node keyCommands];
+    return keyCommands;
+  }
+  return NULL;
+}
+
 - (BOOL)canPerformAction:(SEL)action withSender:(id)sender
 {
-  // We forward responder-chain actions to our node if we can't handle them ourselves. See -targetForAction:withSender:.
-  ASDisplayNode *node = _asyncdisplaykit_node; // Create strong reference to weak ivar.
-  return ([super canPerformAction:action withSender:sender] || [node respondsToSelector:action]);
+  BOOL delegated = NO;
+  for (UIKeyCommand *command in [self nodeKeyCommands]) {
+    if ([command action] == action) {
+      delegated = YES;
+    }
+  }
+  if (delegated) {
+    return NO;
+  } else {
+    ASDisplayNode *node = _asyncdisplaykit_node; // Create strong reference to weak ivar.
+    return ([super canPerformAction:action withSender:sender] || [node respondsToSelector:action]);
+  }
 }
 
 - (void)layoutMarginsDidChange

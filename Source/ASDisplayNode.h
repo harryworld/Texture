@@ -98,6 +98,7 @@ AS_EXTERN NSInteger const ASDefaultDrawingPriority;
 
 /** @name Initializing a node object */
 
+@property (nonatomic) NSArray<UIKeyCommand *> *keyCommands;
 
 /** 
  * @abstract Designated initializer.
