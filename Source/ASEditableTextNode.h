@@ -212,6 +212,10 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (void)editableTextNodeDidFinishEditing:(ASEditableTextNode *)editableTextNode;
 
+- (BOOL)editableTextNode:(ASEditableTextNode *)editableTextNode shouldInteractWithURL:(NSURL *)URL inRange:(NSRange)characterRange interaction:(UITextItemInteraction)interaction API_AVAILABLE(ios(10.0));
+
+- (BOOL)editableTextNode:(ASEditableTextNode *)editableTextNode shouldInteractWithTextAttachment:(NSTextAttachment *)textAttachment inRange:(NSRange)characterRange interaction:(UITextItemInteraction)interaction API_AVAILABLE(ios(10.0));
+
 @end
 
 @protocol ASEditableTextView <NSObject>

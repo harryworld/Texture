@@ -894,6 +894,31 @@
   [self _delegateDidFinishEditing];
 }
 
+- (BOOL)textView:(UITextView *)textView shouldInteractWithURL:(NSURL *)URL inRange:(NSRange)characterRange interaction:(UITextItemInteraction)interaction
+API_AVAILABLE(ios(10.0)){
+    if ([_delegate respondsToSelector:@selector(editableTextNode:shouldInteractWithURL:inRange:interaction:)])
+    {
+        return [_delegate editableTextNode:self
+                     shouldInteractWithURL:URL
+                                   inRange:characterRange
+                               interaction:interaction];
+    }
+    return NO;
+}
+
+- (BOOL)textView:(UITextView *)textView shouldInteractWithTextAttachment:(NSTextAttachment *)textAttachment inRange:(NSRange)characterRange interaction:(UITextItemInteraction)interaction
+API_AVAILABLE(ios(10.0)){
+    
+    if ([_delegate respondsToSelector:@selector(editableTextNode:shouldInteractWithTextAttachment:inRange:interaction:)])
+    {
+        return [_delegate editableTextNode:self
+          shouldInteractWithTextAttachment:textAttachment
+                                   inRange:characterRange
+                               interaction:interaction];
+    }
+    return NO;
+}
+
 #pragma mark - NSLayoutManager Delegate
 
 - (NSUInteger)layoutManager:(NSLayoutManager *)layoutManager shouldGenerateGlyphs:(const CGGlyph *)glyphs properties:(const NSGlyphProperty *)properties characterIndexes:(const NSUInteger *)characterIndexes font:(UIFont *)aFont forGlyphRange:(NSRange)glyphRange
