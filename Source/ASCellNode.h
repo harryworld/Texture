@@ -152,6 +152,15 @@ typedef NS_ENUM(NSUInteger, ASCellNodeVisibilityEvent) {
 */
 - (void)applyLayoutAttributes:(UICollectionViewLayoutAttributes *)layoutAttributes;
 
+/*
+ * ASCellNode can override press events in order to perform special actions for the containing node. If the press is not
+ * handled, the super method should be called.
+ */
+- (void)pressesBegan:(NSSet<UIPress *> *)presses withEvent:(nullable UIPressesEvent *)event;
+- (void)pressesChanged:(NSSet<UITouch *> *)presses withEvent:(nullable UIPressesEvent *)event;
+- (void)pressesEnded:(NSSet<UITouch *> *)presses withEvent:(nullable UIPressesEvent *)event;
+- (void)pressesCancelled:(nullable NSSet<UITouch *> *)presses withEvent:(nullable UIPressesEvent *)event;
+
 /**
  * @abstract Initializes a cell with a given view controller block.
  *

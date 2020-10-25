@@ -163,6 +163,19 @@ static ASDisplayNodeMethodOverrides GetASDisplayNodeMethodOverrides(Class c)
   if (ASDisplayNodeSubclassOverridesSelector(c, @selector(touchesEnded:withEvent:))) {
     overrides |= ASDisplayNodeMethodOverrideTouchesEnded;
   }
+    
+    if (ASDisplayNodeSubclassOverridesSelector(c, @selector(pressesBegan:withEvent:))) {
+        overrides |= ASDisplayNodeMethodOverridePressesBegan;
+    }
+    if (ASDisplayNodeSubclassOverridesSelector(c, @selector(pressesChanged:withEvent:))) {
+        overrides |= ASDisplayNodeMethodOverridePressesChanged;
+    }
+    if (ASDisplayNodeSubclassOverridesSelector(c, @selector(pressesCancelled:withEvent:))) {
+        overrides |= ASDisplayNodeMethodOverridePressesCancelled;
+    }
+    if (ASDisplayNodeSubclassOverridesSelector(c, @selector(pressesEnded:withEvent:))) {
+        overrides |= ASDisplayNodeMethodOverridePressesEnded;
+    }
   
   // Responder chain
   if (ASDisplayNodeSubclassOverridesSelector(c, @selector(canBecomeFirstResponder))) {
@@ -194,6 +207,22 @@ static ASDisplayNodeMethodOverrides GetASDisplayNodeMethodOverrides(Class c)
   if (ASDisplayNodeSubclassOverridesSelector(c, @selector(calculateSizeThatFits:))) {
     overrides |= ASDisplayNodeMethodOverrideCalcSizeThatFits;
   }
+    
+    if (ASDisplayNodeSubclassOverridesSelector(c, @selector(canBecomeFocused))) {
+        overrides |= ASDisplayNodeMethodOverrideCanBecomeFocused;
+    }
+    if (ASDisplayNodeSubclassOverridesSelector(c, @selector(shouldUpdateFocusInContext:))) {
+        overrides |= ASDisplayNodeMethodOverrideShouldUpdateFocus;
+    }
+    if (ASDisplayNodeSubclassOverridesSelector(c, @selector(didUpdateFocusInContext:withAnimationCoordinator:))) {
+        overrides |= ASDisplayNodeMethodOverrideDidUpdateFocus;
+    }
+    if (ASDisplayNodeSubclassOverridesSelector(c, @selector(preferredFocusEnvironments))) {
+        overrides |= ASDisplayNodeMethodOverridePreferredFocusEnvironments;
+    }
+    if (ASDisplayNodeSubclassOverridesSelector(c, @selector(preferredFocusedView))) {
+        overrides |= ASDisplayNodeMethodOverridePreferredFocusedView;
+    }
 
   return overrides;
 }
@@ -892,10 +921,10 @@ ASSynthesizeLockingMethodsWithMutex(__instanceLock__);
   }
 }
 
-#pragma mark - UIResponder
+#pragma mark UIView + _ASDisplayView
 
-#define HANDLE_NODE_RESPONDER_METHOD(__sel) \
-  /* All responder methods should be called on the main thread */ \
+#define RETURN_NODE_UIVIEW_METHOD(__sel) \
+   /* All UIView methods should be called on the main thread */ \
   ASDisplayNodeAssertMainThread(); \
   if (checkFlag(Synchronous)) { \
     /* If the view is not a _ASDisplayView subclass (Synchronous) just call through to the view as we
@@ -903,7 +932,7 @@ ASSynthesizeLockingMethodsWithMutex(__instanceLock__);
     return [_view __sel]; \
   } else { \
     if (ASSubclassOverridesSelector([_ASDisplayView class], _viewClass, @selector(__sel))) { \
-    /* If the subclass overwrites canBecomeFirstResponder just call through
+    /* If the subclass overwrites the selector just call through
        to it as we expect it will handle it */ \
       return [_view __sel]; \
     } else { \
@@ -911,6 +940,79 @@ ASSynthesizeLockingMethodsWithMutex(__instanceLock__);
       return [(_ASDisplayView *)_view __##__sel]; \
     } \
   } \
+
+#define RETURN_NODE_UIVIEW_METHOD_WITH_OBJECT(__sel, __var) \
+   ASDisplayNodeAssertMainThread(); \
+   if (checkFlag(Synchronous)) { \
+     return [_view performSelector:@selector(__sel) withObject:__var]; \
+   } else { \
+     if (ASSubclassOverridesSelector([_ASDisplayView class], _viewClass, @selector(__sel))) { \
+       return [_view performSelector:@selector(__sel) withObject:__var]; \
+     } else { \
+       return [(_ASDisplayView *)_view performSelector:@selector(__##__sel) withObject:__var]; \
+     } \
+   } \
+
+#define RETURN_NODE_UIVIEW_METHOD_WITH_BOOL(__sel, __var) \
+   ASDisplayNodeAssertMainThread(); \
+   if (checkFlag(Synchronous)) { \
+     return [_view performSelector:@selector(__sel) withObject:__var] != nil; \
+   } else { \
+     if (ASSubclassOverridesSelector([_ASDisplayView class], _viewClass, @selector(__sel))) { \
+       return [_view performSelector:@selector(__sel) withObject:__var] != nil; \
+     } else { \
+       return [(_ASDisplayView *)_view performSelector:@selector(__##__sel) withObject:__var] != nil; \
+     } \
+   } \
+
+ #define RETURN_NODE_UIVIEW_METHOD_WITH_OBJECTS(__sel, __var1, __var2) \
+   ASDisplayNodeAssertMainThread(); \
+   if (checkFlag(Synchronous)) { \
+     return [_view performSelector:@selector(__sel) withObject:__var1 withObject:__var2]; \
+   } else { \
+     if (ASSubclassOverridesSelector([_ASDisplayView class], _viewClass, @selector(__sel))) { \
+       return [_view performSelector:@selector(__sel) withObject:__var1 withObject:__var2]; \
+     } else { \
+       return [(_ASDisplayView *)_view performSelector:@selector(__##__sel) withObject:__var1 withObject:__var2]; \
+     } \
+   } \
+
+ #define HANDLE_NODE_UIVIEW_METHOD(__sel) \
+   ASDisplayNodeAssertMainThread(); \
+   if (checkFlag(Synchronous)) { \
+     [_view __sel]; \
+   } else { \
+     if (ASSubclassOverridesSelector([_ASDisplayView class], _viewClass, @selector(__sel))) { \
+       [_view __sel]; \
+     } else { \
+       [(_ASDisplayView *)_view __##__sel]; \
+     } \
+   } \
+
+ #define HANDLE_NODE_UIVIEW_METHOD_WITH_OBJECT(__sel, __var) \
+   ASDisplayNodeAssertMainThread(); \
+   if (checkFlag(Synchronous)) { \
+     [_view performSelector:@selector(__sel) withObject:__var]; \
+   } else { \
+     if (ASSubclassOverridesSelector([_ASDisplayView class], _viewClass, @selector(__sel))) { \
+       [_view performSelector:@selector(__sel) withObject:__var]; \
+     } else { \
+       [(_ASDisplayView *)_view performSelector:@selector(__##__sel) withObject:__var]; \
+     } \
+   } \
+
+ #define HANDLE_NODE_UIVIEW_METHOD_WITH_OBJECTS(__sel, __var1, __var2) \
+   ASDisplayNodeAssertMainThread(); \
+   if (checkFlag(Synchronous)) { \
+     [_view performSelector:@selector(__sel) withObject:__var1 withObject:__var2]; \
+   } else { \
+     if (ASSubclassOverridesSelector([_ASDisplayView class], _viewClass, @selector(__sel))) { \
+       [_view performSelector:@selector(__sel) withObject:__var1 withObject:__var2]; \
+     } else { \
+       [(_ASDisplayView *)_view performSelector:@selector(__##__sel) withObject:__var1 withObject:__var2]; \
+     } \
+   } \
+
 
 - (void)checkResponderCompatibility
 {
@@ -936,7 +1038,7 @@ ASSynthesizeLockingMethodsWithMutex(__instanceLock__);
     return NO;
   }
   
-  HANDLE_NODE_RESPONDER_METHOD(canBecomeFirstResponder);
+    RETURN_NODE_UIVIEW_METHOD(canBecomeFirstResponder);
 }
 
 - (BOOL)__becomeFirstResponder
@@ -948,7 +1050,7 @@ ASSynthesizeLockingMethodsWithMutex(__instanceLock__);
     return NO;
   }
 
-  HANDLE_NODE_RESPONDER_METHOD(becomeFirstResponder);
+    RETURN_NODE_UIVIEW_METHOD(becomeFirstResponder);
 }
 
 - (BOOL)__canResignFirstResponder
@@ -958,7 +1060,7 @@ ASSynthesizeLockingMethodsWithMutex(__instanceLock__);
     return YES;
   }
   
-  HANDLE_NODE_RESPONDER_METHOD(canResignFirstResponder);
+    RETURN_NODE_UIVIEW_METHOD(canResignFirstResponder);
 }
 
 - (BOOL)__resignFirstResponder
@@ -970,7 +1072,7 @@ ASSynthesizeLockingMethodsWithMutex(__instanceLock__);
     return NO;
   }
   
-  HANDLE_NODE_RESPONDER_METHOD(resignFirstResponder);
+    RETURN_NODE_UIVIEW_METHOD(resignFirstResponder);
 }
 
 - (BOOL)__isFirstResponder
@@ -980,8 +1082,70 @@ ASSynthesizeLockingMethodsWithMutex(__instanceLock__);
     return NO;
   }
   
-  HANDLE_NODE_RESPONDER_METHOD(isFirstResponder);
+    RETURN_NODE_UIVIEW_METHOD(isFirstResponder);
 }
+
+#pragma mark - Focus Engine
+ - (void)__setNeedsFocusUpdate
+ {
+   if (_view == nil) {
+     return;
+   }
+
+   HANDLE_NODE_UIVIEW_METHOD(setNeedsFocusUpdate);
+ }
+
+ - (void)__updateFocusIfNeeded
+ {
+   if (_view == nil) {
+     return;
+   }
+
+   HANDLE_NODE_UIVIEW_METHOD(updateFocusIfNeeded);
+ }
+
+ - (BOOL)__canBecomeFocused
+ {
+   if (_view == nil) {
+     return NO;
+   }
+
+   RETURN_NODE_UIVIEW_METHOD(canBecomeFocused);
+ }
+
+ - (BOOL)__shouldUpdateFocusInContext:(UIFocusUpdateContext *)context
+ {
+   if (_view == nil) {
+     return NO;
+   }
+
+     RETURN_NODE_UIVIEW_METHOD_WITH_BOOL(shouldUpdateFocusInContext:, context);
+ }
+
+ - (void)__didUpdateFocusInContext:(UIFocusUpdateContext *)context withAnimationCoordinator:(UIFocusAnimationCoordinator *)coordinator
+ {
+   if (_view == nil) {
+     return;
+   }
+
+   HANDLE_NODE_UIVIEW_METHOD_WITH_OBJECTS(didUpdateFocusInContext:withAnimationCoordinator:, context, coordinator);
+ }
+
+ - (NSArray<id<UIFocusEnvironment>> *)__preferredFocusEnvironments
+ {
+   // Note: This implicitly loads the view if it hasn't been loaded yet.
+   [self view];
+
+   RETURN_NODE_UIVIEW_METHOD(preferredFocusEnvironments);
+ }
+
+ - (UIView *)__preferredFocusedView
+ {
+   // Note: This implicitly loads the view if it hasn't been loaded yet.
+   [self view];
+
+   RETURN_NODE_UIVIEW_METHOD(preferredFocusedView);
+ }
 
 #pragma mark <ASDebugNameProvider>
 
@@ -1411,6 +1575,27 @@ NSString * const ASRenderingEngineDidDisplayNodesScheduledBeforeTimestamp = @"AS
 {
   // Subclass hook
 }
+
+- (void)pressesBegan:(NSSet<UIPress *> *)presses withEvent:(UIPressesEvent *)event
+{
+    // Subclass hook
+}
+
+- (void)pressesChanged:(NSSet<UIPress *> *)presses withEvent:(UIPressesEvent *)event
+{
+    // Subclass hook
+}
+
+- (void)pressesEnded:(NSSet<UIPress *> *)touches withEvent:(UIPressesEvent *)event
+{
+    // Subclass  hook
+}
+
+- (void)pressesCancelled:(NSSet<UIPress *> *)presses withEvent:(UIPressesEvent *)event
+{
+    // Subclass hook
+}
+
 
 // Helper method to determine if it's safe to call setNeedsDisplay on a layer without throwing away the content.
 // For details look at the comment on the canCallSetNeedsDisplayOfLayer flag

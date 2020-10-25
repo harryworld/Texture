@@ -37,19 +37,28 @@ _ASPendingState * ASDisplayNodeGetPendingState(ASDisplayNode * node);
 
 typedef NS_OPTIONS(NSUInteger, ASDisplayNodeMethodOverrides)
 {
-  ASDisplayNodeMethodOverrideNone                   = 0,
-  ASDisplayNodeMethodOverrideTouchesBegan           = 1 << 0,
-  ASDisplayNodeMethodOverrideTouchesCancelled       = 1 << 1,
-  ASDisplayNodeMethodOverrideTouchesEnded           = 1 << 2,
-  ASDisplayNodeMethodOverrideTouchesMoved           = 1 << 3,
-  ASDisplayNodeMethodOverrideLayoutSpecThatFits     = 1 << 4,
-  ASDisplayNodeMethodOverrideCalcLayoutThatFits     = 1 << 5,
-  ASDisplayNodeMethodOverrideCalcSizeThatFits       = 1 << 6,
-  ASDisplayNodeMethodOverrideCanBecomeFirstResponder= 1 << 7,
-  ASDisplayNodeMethodOverrideBecomeFirstResponder   = 1 << 8,
-  ASDisplayNodeMethodOverrideCanResignFirstResponder= 1 << 9,
-  ASDisplayNodeMethodOverrideResignFirstResponder   = 1 << 10,
-  ASDisplayNodeMethodOverrideIsFirstResponder       = 1 << 11,
+    ASDisplayNodeMethodOverrideNone                         = 0,
+    ASDisplayNodeMethodOverrideTouchesBegan                 = 1 << 0,
+    ASDisplayNodeMethodOverrideTouchesCancelled             = 1 << 1,
+    ASDisplayNodeMethodOverrideTouchesEnded                 = 1 << 2,
+    ASDisplayNodeMethodOverrideTouchesMoved                 = 1 << 3,
+    ASDisplayNodeMethodOverridePressesBegan                 = 1 << 4,
+    ASDisplayNodeMethodOverridePressesCancelled             = 1 << 5,
+    ASDisplayNodeMethodOverridePressesEnded                 = 1 << 6,
+    ASDisplayNodeMethodOverridePressesChanged               = 1 << 7,
+    ASDisplayNodeMethodOverrideLayoutSpecThatFits           = 1 << 8,
+    ASDisplayNodeMethodOverrideCalcLayoutThatFits           = 1 << 9,
+    ASDisplayNodeMethodOverrideCalcSizeThatFits             = 1 << 10,
+    ASDisplayNodeMethodOverrideCanBecomeFocused             = 1 << 11,
+    ASDisplayNodeMethodOverrideShouldUpdateFocus            = 1 << 12,
+    ASDisplayNodeMethodOverrideDidUpdateFocus               = 1 << 13,
+    ASDisplayNodeMethodOverridePreferredFocusEnvironments   = 1 << 14,
+    ASDisplayNodeMethodOverridePreferredFocusedView         = 1 << 15,
+    ASDisplayNodeMethodOverrideCanBecomeFirstResponder      = 1 << 16,
+    ASDisplayNodeMethodOverrideBecomeFirstResponder         = 1 << 17,
+    ASDisplayNodeMethodOverrideCanResignFirstResponder      = 1 << 18,
+    ASDisplayNodeMethodOverrideResignFirstResponder         = 1 << 19,
+    ASDisplayNodeMethodOverrideIsFirstResponder             = 1 << 20,
 };
 
 typedef NS_OPTIONS(uint_least32_t, ASDisplayNodeAtomicFlags)
@@ -175,6 +184,12 @@ AS_EXTERN NSString * const ASRenderingEngineDidDisplayNodesScheduledBeforeTimest
   NSTimeInterval _defaultLayoutTransitionDuration;
   NSTimeInterval _defaultLayoutTransitionDelay;
   UIViewAnimationOptions _defaultLayoutTransitionOptions;
+    
+    ASFocusabilityBlock _canBecomeFocusedBlock;
+    ASFocusUpdateContextBlock _shouldUpdateFocusBlock;
+    ASFocusUpdateAnimationCoordinatorBlock _didUpdateFocusBlock;
+    ASFocusEnvironmentsBlock _preferredFocusEnvironmentsBlock;
+    ASFocusViewBlock _preferredFocusedViewBlock;
 
   std::atomic<int32_t> _transitionID;
   std::atomic<int32_t> _pendingTransitionID;
@@ -329,6 +344,15 @@ AS_EXTERN NSString * const ASRenderingEngineDidDisplayNodesScheduledBeforeTimest
 - (BOOL)__canResignFirstResponder;
 - (BOOL)__resignFirstResponder;
 - (BOOL)__isFirstResponder;
+
+// Helper methods for focus forwarding
+- (void)__setNeedsFocusUpdate;
+- (void)__updateFocusIfNeeded;
+- (BOOL)__canBecomeFocused;
+- (BOOL)__shouldUpdateFocusInContext:(UIFocusUpdateContext *)context;
+- (void)__didUpdateFocusInContext:(UIFocusUpdateContext *)context withAnimationCoordinator:(UIFocusAnimationCoordinator *)coordinator;
+- (NSArray<id<UIFocusEnvironment>> *)__preferredFocusEnvironments API_AVAILABLE(ios(10.0), tvos(10.0));
+- (nullable UIView *)__preferredFocusedView;
 
 /// Helper method to summarize whether or not the node run through the display process
 - (BOOL)_implementsDisplay;

@@ -748,6 +748,11 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (ASSizeRange)collectionNode:(ASCollectionNode *)collectionNode constrainedSizeForItemAtIndexPath:(NSIndexPath *)indexPath;
 
+- (BOOL)collectionNode:(ASCollectionNode *)collectionNode canFocusItemAtIndexPath:(NSIndexPath *)indexPath;
+- (BOOL)collectionNode:(ASCollectionNode *)collectionNode shouldUpdateFocusInContext:(UICollectionViewFocusUpdateContext *)context;
+- (void)collectionNode:(ASCollectionNode *)collectionNode didUpdateFocusInContext:(UICollectionViewFocusUpdateContext *)context withAnimationCoordinator:(UIFocusAnimationCoordinator *)coordinator;
+- (nullable NSIndexPath *)indexPathForPreferredFocusedViewInCollectionNode:(ASCollectionNode *)collectionNode;
+
 - (void)collectionNode:(ASCollectionNode *)collectionNode willDisplayItemWithNode:(ASCellNode *)node;
 
 - (void)collectionNode:(ASCollectionNode *)collectionNode didEndDisplayingItemWithNode:(ASCellNode *)node;

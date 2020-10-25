@@ -21,7 +21,7 @@
           selector == @selector(tableView:cellForRowAtIndexPath:) ||
           selector == @selector(tableView:heightForRowAtIndexPath:) ||
           
-          // Selection, highlighting, menu
+          // Selection, highlighting, focus, menu
           selector == @selector(tableView:willSelectRowAtIndexPath:) ||
           selector == @selector(tableView:didSelectRowAtIndexPath:) ||
           selector == @selector(tableView:willDeselectRowAtIndexPath:) ||
@@ -29,6 +29,10 @@
           selector == @selector(tableView:shouldHighlightRowAtIndexPath:) ||
           selector == @selector(tableView:didHighlightRowAtIndexPath:) ||
           selector == @selector(tableView:didUnhighlightRowAtIndexPath:) ||
+          selector == @selector(tableView:canFocusRowAtIndexPath:) ||
+          selector == @selector(tableView:shouldUpdateFocusInContext:) ||
+          selector == @selector(tableView:didUpdateFocusInContext:withAnimationCoordinator:) ||
+          selector == @selector(indexPathForPreferredFocusedViewInTableView:) ||
           selector == @selector(tableView:shouldShowMenuForRowAtIndexPath:) ||
           selector == @selector(tableView:canPerformAction:forRowAtIndexPath:withSender:) ||
           selector == @selector(tableView:performAction:forRowAtIndexPath:withSender:) ||
@@ -75,7 +79,7 @@
           selector == @selector(collectionView:layout:referenceSizeForFooterInSection:) ||
           selector == @selector(collectionView:viewForSupplementaryElementOfKind:atIndexPath:) ||
           
-          // Selection, highlighting, menu
+          // Selection, highlighting, focus, menu
           selector == @selector(collectionView:shouldSelectItemAtIndexPath:) ||
           selector == @selector(collectionView:didSelectItemAtIndexPath:) ||
           selector == @selector(collectionView:shouldDeselectItemAtIndexPath:) ||
@@ -83,6 +87,10 @@
           selector == @selector(collectionView:shouldHighlightItemAtIndexPath:) ||
           selector == @selector(collectionView:didHighlightItemAtIndexPath:) ||
           selector == @selector(collectionView:didUnhighlightItemAtIndexPath:) ||
+          selector == @selector(collectionView:canFocusItemAtIndexPath:) ||
+          selector == @selector(collectionView:shouldUpdateFocusInContext:) ||
+          selector == @selector(collectionView:didUpdateFocusInContext:withAnimationCoordinator:) ||
+          selector == @selector(indexPathForPreferredFocusedViewInCollectionView:) ||
           selector == @selector(collectionView:shouldShowMenuForItemAtIndexPath:) ||
           selector == @selector(collectionView:canPerformAction:forItemAtIndexPath:withSender:) ||
           selector == @selector(collectionView:performAction:forItemAtIndexPath:withSender:) ||
